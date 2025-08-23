@@ -52,25 +52,25 @@ const Grid = forwardRef<GridHandle>((props, ref) => {
     return newgrid;
   };
 
-  const getNeighbors = (i: number, j: number) => {
-    const neighbors = [
-      [i - 1, j - 1],
-      [i - 1, j],
-      [i - 1, j + 1],
-      [i, j - 1],
-      [i, j + 1],
-      [i + 1, j - 1],
-      [i + 1, j],
-      [i + 1, j + 1],
-    ];
-
-    return neighbors.filter((neighbor) => {
-      const [x, y] = neighbor;
-      return x >= 0 && x < numberOfRows && y >= 0 && y < numberOfColumns;
-    });
-  };
-
   const performOneIteration = useCallback(() => {
+    const getNeighbors = (i: number, j: number) => {
+      const neighbors = [
+        [i - 1, j - 1],
+        [i - 1, j],
+        [i - 1, j + 1],
+        [i, j - 1],
+        [i, j + 1],
+        [i + 1, j - 1],
+        [i + 1, j],
+        [i + 1, j + 1],
+      ];
+
+      return neighbors.filter((neighbor) => {
+        const [x, y] = neighbor;
+        return x >= 0 && x < numberOfRows && y >= 0 && y < numberOfColumns;
+      });
+    };
+
     setGrid((grid) => {
       return produce(grid, (newgrid) => {
         for (let i = 0; i < numberOfRows; i++) {
