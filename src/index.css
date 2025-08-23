@@ -4,21 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center px-6 bg-yellow-darker h-fit text-base
-            py-4 uppercase rounded cursor-pointer font-bold
-            focus:outline-none focus:ring-2 focus:ring-primary
-            hover:bg-primary-light;
-  }
-}
-
-html {
-  height: 100%;
-}
-#root {
-  height: 100%;
-}
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
