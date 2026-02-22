@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 interface HeaderProps {
   onStart: () => void;
@@ -6,6 +6,7 @@ interface HeaderProps {
   onStep: () => void;
   onReset: () => void;
   onSpeedChange: (speed: number) => void;
+  generation: number;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -14,23 +15,42 @@ const Header: React.FC<HeaderProps> = ({
   onStep,
   onReset,
   onSpeedChange,
+  generation,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(100);
 
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      onPause();
-    } else {
-      onStart();
-    }
-    setIsPlaying(!isPlaying);
-  };
+  // Stable refs for callbacks to avoid effect churn during fast simulation
+  const isPlayingRef = useRef(false);
+  const onStartRef = useRef(onStart);
+  const onPauseRef = useRef(onPause);
+  const onStepRef = useRef(onStep);
+  const onResetRef = useRef(onReset);
 
-  const handleReset = () => {
+  useEffect(() => {
+    onStartRef.current = onStart;
+    onPauseRef.current = onPause;
+    onStepRef.current = onStep;
+    onResetRef.current = onReset;
+  });
+
+  const handlePlayPause = useCallback(() => {
+    if (isPlayingRef.current) {
+      onPauseRef.current();
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+    } else {
+      onStartRef.current();
+      setIsPlaying(true);
+      isPlayingRef.current = true;
+    }
+  }, []);
+
+  const handleReset = useCallback(() => {
     setIsPlaying(false);
-    onReset();
-  };
+    isPlayingRef.current = false;
+    onResetRef.current();
+  }, []);
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSpeed = parseInt(e.target.value);
@@ -38,108 +58,99 @@ const Header: React.FC<HeaderProps> = ({
     onSpeedChange(newSpeed);
   };
 
-  return (
-    <div className="fixed top-0 left-0 right-0 z-10 bg-yellow-dark border-b border-yellow-darker px-6 py-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-yellow-darker">Game of Life</h1>
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
 
-        <div className="flex items-center gap-4">
-          {/* Play/Pause Button */}
+      if (e.code === "Space") {
+        e.preventDefault();
+        handlePlayPause();
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        if (!isPlayingRef.current) onStepRef.current();
+      } else if (e.code === "KeyR") {
+        e.preventDefault();
+        handleReset();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePlayPause, handleReset]);
+
+  const formatGen = (n: number) => String(n).padStart(5, "0");
+
+  const ghostBtn =
+    "inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-ink border-2 border-stroke-heavy hover:border-ink transition-colors cursor-pointer bg-transparent select-none";
+  const ghostBtnDisabled =
+    "inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-ink-muted border-2 border-stroke hover:border-stroke cursor-not-allowed bg-transparent select-none";
+
+  return (
+    <header className="flex-shrink-0 bg-void border-b-[3px] border-stroke-heavy px-3 sm:px-5 py-2.5">
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Title + Generation */}
+        <div className="flex items-center gap-2 sm:gap-3 mr-auto">
+          <h1 className="text-ink font-bold text-sm sm:text-base tracking-tight uppercase flex items-center gap-1.5 select-none">
+            <span className="text-neon text-base sm:text-lg leading-none">
+              ■
+            </span>
+            <span className="hidden sm:inline">Game of </span>Life
+          </h1>
+          <span
+            className={`text-[10px] sm:text-xs font-mono tracking-wider transition-colors duration-200 ${
+              isPlaying ? "text-neon" : "text-ink-dim opacity-70"
+            }`}
+          >
+            {formatGen(generation)}
+          </span>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          {/* Play / Pause */}
           <button
             onClick={handlePlayPause}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-accent text-ink border-2 border-accent hover:bg-accent-hover hover:border-accent-hover transition-colors cursor-pointer select-none"
           >
-            {isPlaying ? (
-              <>
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Pause
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Play
-              </>
-            )}
+            {isPlaying ? "❚❚" : "▶"}
+            <span className="hidden md:inline">
+              {isPlaying ? "Pause" : "Play"}
+            </span>
           </button>
 
-          {/* Step Button */}
+          {/* Step */}
           <button
             onClick={onStep}
             disabled={isPlaying}
-            className="px-4 py-2 disabled:text-gray-700 disabled:cursor-not-allowed text-yellow-darker rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+            className={isPlaying ? ghostBtnDisabled : ghostBtn}
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-              <path
-                fillRule="evenodd"
-                d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Step
+            »<span className="hidden md:inline">Step</span>
           </button>
 
-          {/* Reset Button */}
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 text-yellow-darker rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Reset
+          {/* Clear */}
+          <button onClick={handleReset} className={ghostBtn}>
+            ✕<span className="hidden md:inline">Clear</span>
           </button>
+        </div>
 
-          {/* Speed Control */}
-          <div className="flex items-center gap-3 bg-yellow-dark px-4 py-2 rounded-lg">
-            <label className="text-yellow-darker text-sm font-medium">
-              Speed:
-            </label>
-            <input
-              type="range"
-              min="10"
-              max="1000"
-              step="10"
-              value={speed}
-              onChange={handleSpeedChange}
-              // style the thumb
-              className="w-32 h-2 bg-primary-light rounded-lg appearance-none cursor-pointer"
-            />
-            <span className="text-yellow-darker text-sm w-12 text-right">
-              {speed}ms
-            </span>
-          </div>
+        {/* Speed */}
+        <div className="hidden xs:flex items-center gap-2 pl-2 sm:pl-3 border-l-[3px] border-stroke-heavy">
+          <input
+            type="range"
+            min="10"
+            max="1000"
+            step="10"
+            value={speed}
+            onChange={handleSpeedChange}
+            className="w-12 sm:w-20 md:w-24"
+          />
+          <span className="text-ink-dim text-[10px] font-mono w-9 text-right">
+            {speed}ms
+          </span>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 

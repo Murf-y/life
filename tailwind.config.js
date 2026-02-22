@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./src/components/**/*.{js,jsx,ts,tsx}",
-  ],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     screens: {
       xs: "400px",
@@ -14,16 +11,25 @@ module.exports = {
     },
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#AA4465",
-          dark: "#993d5b",
-          light: "#b35774",
+        void: "#0a0a0a",
+        surface: "#111111",
+        ink: {
+          DEFAULT: "#f0f0f0",
+          dim: "#777777",
+          muted: "#444444",
         },
-        yellow: {
-          DEFAULT: "#EDF0DA",
-          dark: "#F0DFAD",
-          darker: "#8F5C38",
+        accent: {
+          DEFAULT: "#FF2D6B",
+          hover: "#ff5088",
         },
+        neon: "#39FF14",
+        stroke: {
+          DEFAULT: "#2a2a2a",
+          heavy: "#444444",
+        },
+      },
+      fontFamily: {
+        mono: ['"Space Mono"', "monospace"],
       },
     },
   },
